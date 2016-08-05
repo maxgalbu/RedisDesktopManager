@@ -7,6 +7,6 @@ before_install:
 script:
   - git submodule update --init --recursive 
   - cd ./src
-  - qmake && make -s -j 2
+  - qmake && make -j 2
 after_success:
   - ls -l ../bin/osx/release
