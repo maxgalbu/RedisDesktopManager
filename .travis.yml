@@ -1,6 +1,23 @@
 language: cpp
 os:
   - osx
+  
+env:
+  global:
+    - GITHUB_USERNAME: maxgalbu
+    - GITHUB_REPO: RedisDesktopManager
+    - GITHUB_REPOPATH: ${GITHUB_USERNAME}/${GITHUB_REPO}
+    - GITHUB_TAGNAME: latest
+    - GITHUB_RELEASE_BIN_PLATFORM: darwin
+    - GITHUB_RELEASE_BIN_ARCHITECTURE: amd64
+    - RELEASE_FILENAME: ../bin/osx/debug/rdm
+    - secure: "VMCoVPiXpDNGCKL+A7SZbSQTnTT2ZQgd+xFgwQOOJnfgvDQWpK3OsvfCaCCABhUd4PUMKRS37M1SOsG56XEXctnqTaemXC7I1UWF58vocv1kVk6fLmWxvLdoYEeGHXtNs4EhHZO/eWmdlvsvwm03AnHNcDn/wJ7A36GLTXaLPw/pXIARLBlla80Esyni9Df7E8ScAZXR0yFVX3QdocJo0i1SPUe9iZhadIh3a6rhW7TJZqAIwgpEPTK2IdK3IIXrbQd76itplnneDr9wGnMa07u2/LVF+UI1P3rtCgqXnmkuAajXEa6barhgkI2P4aPJ/SNK7sQH5JKoGUYx8/IlbZ/V9phCl3uiF3dTSi9DTgyTvIN7Uxm0t8SqmdSGawxOE1m2n9mMrvjoXkLevsRfmhiB/hA2bydwRyARfcVtjzkCCh1hzoSt85uOtg9B6u/axMLpsT/5SCw9+nVol97xCrd5hHOXuLVsWfb9zHB6uG8ktw/97aIJWGU7Qii50//KggH35oLFWv52RzEkiG16++glr9dK0ayhkXaF/kziB40sRgYt6PJNGvHoCCZ6FU+sl0pPsUokFhfytH3fKb8MojvSc6VGoPFuLRcnloORwNXXfr8M9ZPs5ycnh1Ve23Og7B91SR6s/wMeqfu2pSpAChuvBGwzbpT8RffNcJmqLsY="
+
+#Avoid travis launching a compilation every time a tag is created
+branches:
+  only:
+    - test-osx-compiling
+
 before_install:
 - brew update > /dev/null; brew install qt5 tree > /dev/null; export PATH=/usr/local/opt/qt5/bin/:$PATH
 - cd ./src && ./configure && cd ./../
@@ -9,4 +26,21 @@ script:
   - cd ./src
   - qmake CONFIG+=release && make -j 2
 after_success:
-  - tree ../
+  #Creo un tag per creare una release su github
+  - git config --global user.email "max.galbusera+travis@gmail.com"
+  - git config --global user.name "Travis-CI"
+  - git remote rm origin
+  - git remote add origin https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/${GITHUB_USERNAME}/${GITHUB_REPO}
+  - git tag -d $GITHUB_TAGNAME
+  - git push origin :$GITHUB_TAGNAME --quiet 2> /dev/null
+  - git tag -a $GITHUB_TAGNAME -m 'latest version'
+  - git push origin $GITHUB_TAGNAME --quiet 2> /dev/null
+
+  #Download github-release
+  - wget "https://github.com/aktau/github-release/releases/download/v0.5.3/${GITHUB_RELEASE_BIN_PLATFORM}-${GITHUB_RELEASE_BIN_ARCHITECTURE}-github-release.tar.bz2"
+  - tar xvf ${GITHUB_RELEASE_BIN_PLATFORM}-${GITHUB_RELEASE_BIN_ARCHITECTURE}-github-release.tar.bz2
+
+  #Uso https://github.com/aktau/github-release
+  - bin/${GITHUB_RELEASE_BIN_PLATFORM}/${GITHUB_RELEASE_BIN_ARCHITECTURE}/github-release delete --user $GITHUB_USERNAME --repo $GITHUB_REPO --tag $GITHUB_TAGNAME
+  - bin/${GITHUB_RELEASE_BIN_PLATFORM}/${GITHUB_RELEASE_BIN_ARCHITECTURE}/github-release release --user $GITHUB_USERNAME --repo $GITHUB_REPO --tag $GITHUB_TAGNAME --name "Latest version"
+  - bin/${GITHUB_RELEASE_BIN_PLATFORM}/${GITHUB_RELEASE_BIN_ARCHITECTURE}/github-release upload --user $GITHUB_USERNAME --repo $GITHUB_REPO --tag $GITHUB_TAGNAME --name "$RELEASE_FILENAME" --file $RELEASE_FILENAME
