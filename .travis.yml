@@ -1,30 +1,14 @@
 language: cpp
-dist: trusty
 os:
-  - linux
   - osx
 before_install:
-- if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update > /dev/null; brew install qt5 > /dev/null; export PATH=/usr/local/opt/qt5/bin/:$PATH; fi
+- brew update > /dev/null; brew install qt5 > /dev/null; export PATH=/usr/local/opt/qt5/bin/:$PATH
 - cd ./src && ./configure && cd ./../
-- if [ "$TRAVIS_OS_NAME" == "linux" ]; then source /opt/qt54/bin/qt54-env.sh; fi
-- qmake -v
 script:
   - git submodule update --init --recursive 
-  - cd ./tests
-  - qmake DEFINES+=INTEGRATION_TESTS && make -s -j 2
-  - ./../bin/tests/tests -platform minimal -txt
-  - ./../bin/tests/qml_tests -platform minimal -txt
-  - cd ./../src
+  - cd ./src
   - qmake && make -s -j 2
 after_success:
-  - cd ./../tests
-  - sudo pip install cpp-coveralls
-  - coveralls -b `pwd`/unit_tests/ -r `readlink -m ./../` -e 3rdparty/ -e tests/ -E .+/moc_.* -E .+/qrc_.* -E .+/qxt.* -E .+/ui_.*  > coveralls.log
+  - ls -l ../bin/osx/release
 services:
   - redis-server
-notifications:
-  recipients:
-    - u.glide@gmail.com
-  email:
-    on_success: change
-    on_failure: change
